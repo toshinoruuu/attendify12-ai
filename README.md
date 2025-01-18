@@ -1,1 +1,1 @@
-# attendify12-ai
+# attendify-proto

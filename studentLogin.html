@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UE | Attendify</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Bootswatch Simplex Theme -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/simplex/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand">UE | attendify</a>
+    </nav>
+
+    <!-- Body -->
+    <div class="container mt-4 d-flex justify-content-center">
+        <div class="card col-md-4" id="login-section">
+            <div class="card-body">
+                <h3>Student Login</h3>
+                <h4><b>ICT3 12-1</b></h4>
+                <div class="mt-5">
+                    <form id="attendanceForm">
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="studentId" placeholder="202400000000">
+                            <label for="studentId">Student ID</label>
+                          </div>
+                          <div class="form-floating">
+                            <input type="password" class="form-control" id="floatingPassword" placeholder="Password" autocomplete="off" required>
+                            <label for="floatingPassword">Password</label>
+                          </div>
+                          <div class="form-floating mt-3">
+                            <input type="checkbox" name="" id="" required>
+                            <label for="" class="text-justify font-italic">I confirm my physical attendance on this class and agree to the policy and guidelines of the UE Attendify System</label>
+                          </div>
+                          <div class="d-grid mt-3">
+                              <button class="btn btn-lg btn-primary" type="submit">Submit</button>
+                          </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="card col-md-4" id="success-section">
+            <div class="card-body">
+                <div class="alert alert-success">
+                    <h3><strong>Login Success</strong></h3>
+                </div>
+                <h4><b>ICT3 12-1</b></h4>
+                <div class="mt-4">
+                    <h4>Date & Time</h4>
+                    <h5><b><span id="success-field-dateTime">&nbsp;</span></b></h5>
+                    <br>
+                    <h4>Student ID</h4>
+                    <h5><b><span id="success-field-studentId">&nbsp;</span></b></h5>
+                    <h4>Name</h4>
+                    <h5><b><span id="success-field-name">&nbsp;</span></b></h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="moment.min.js"></script>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+      
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyA0hTRuEgjrP9YQ4LwkHcSUf7xkdl9lBgI",
+          authDomain: "attendify12-ai.firebaseapp.com",
+          projectId: "attendify12-ai",
+          storageBucket: "attendify12-ai.firebasestorage.app",
+          messagingSenderId: "374044642888",
+          appId: "1:374044642888:web:44706986d500af43a0927d",
+          measurementId: "G-Z00RSFZXWK"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+      
+        const attendanceForm = document.getElementById('attendanceForm');
+        const studentIdInput = document.getElementById('studentId');
+
+        // Function to insert attendance record into Firestore
+        async function markAttendance(studentId) {
+            const docRef = doc(db, "students", studentId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                try {
+                    var currentTime = new Date();
+                    const docRef = await addDoc(collection(db, "ict3_12_1-1-1-2024"), {
+                        studentId: studentId,
+                        time: currentTime,
+                    });
+                    document.getElementById("success-field-dateTime").textContent = moment(currentTime).format('MMMM D YYYY, h:mm A');
+                    document.getElementById("success-field-studentId").textContent = studentId;
+                    document.getElementById("success-field-name").textContent = docSnap.data().firstName + ' ' + docSnap.data().middleInitial + '. ' + docSnap.data().lastName;
+                    document.getElementById("login-section").style.display = 'none';
+                    document.getElementById("success-section").style.display = 'block';
+                    console.log("Document written with ID: ", docRef.id);
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                }
+            } else {
+                alert('Student ID not found');
+            }
+        }
+
+        // Event listener for form submission
+        attendanceForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const studentId = studentIdInput.value.trim();
+            if (studentId !== '') {
+                markAttendance(studentId);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UE | Attendify</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Bootswatch Simplex Theme -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/simplex/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="index.html">UE | attendify</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="index.html">Home</a>
+                </li>
+                <li class="nav-item active">
+                    <a class="nav-link" href="classes.html">Classes <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="students.html">Students</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Body -->
+    <div class="container mt-4">
+        <div class="text-center my-4">
+            <img src="qr.png" class="qr-code" alt="">
+            <h1 id="headCount">0</h1>
+        </div>
+        <div class="container">
+            <div class="d-grid">
+                <input
+                    type="datetime-local"
+                    id="start-time"
+                    name="start-time" />
+                <button class="btn btn-lg btn-outline-warning ml-2 float-right" type="button" id="reset-button">RESET</button>
+                <button class="btn btn-lg btn-outline-success ml-2 float-right" type="button" id="export-button">EXPORT</button>
+            </div>
+        </div>
+        <div class="container mt-4">
+            <table class="table table-hover students-table" id="students-table-attendance">
+                <thead>
+                  <tr>
+                    <th scope="col">Student ID</th>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">Date Time</th>
+                    <th scope="col">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="students-tbody">
+                  
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="moment.min.js"></script>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-analytics.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+      
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyA0hTRuEgjrP9YQ4LwkHcSUf7xkdl9lBgI",
+          authDomain: "attendify12-ai.firebaseapp.com",
+          projectId: "attendify12-ai",
+          storageBucket: "attendify12-ai.firebasestorage.app",
+          messagingSenderId: "374044642888",
+          appId: "1:374044642888:web:44706986d500af43a0927d",
+          measurementId: "G-Z00RSFZXWK"
+        };
+      
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+      
+        async function getAll() {
+            const q = query(collection(db, "students"), orderBy("lastName"));
+            onSnapshot(q, (querySnapshot) => {
+                const students = [];
+                var tableBody = document.getElementsByClassName("students-tbody")[0];
+                tableBody.innerHTML = "";
+                querySnapshot.forEach((doc) => {
+                    students.push({
+                        id: doc.id,
+                        name: doc.data().lastName + ", " + doc.data().firstName + " " + doc.data().middleInitial
+                    });
+                });
+                document.getElementById("headCount").textContent = students.length;
+                // Iterate through the data array
+                students.forEach(function (student) {
+                    var row = document.createElement("tr");
+                    row.id = 'tr-' + student.id;
+                    
+                    // Create table cells and fill them with data
+                    var fieldId = document.createElement("td");
+                    fieldId.textContent = student.id;
+                    fieldId.scope = "row";
+                    row.appendChild(fieldId);
+
+                    var fieldName = document.createElement("td");
+                    fieldName.textContent = student.name;
+                    row.appendChild(fieldName);
+
+                    var fieldTime = document.createElement("td");
+                    fieldTime.id = "time-" + student.id;
+                    row.appendChild(fieldTime);
+
+                    var fieldStatus = document.createElement("td");
+                    fieldStatus.id = "status-" + student.id;
+                    fieldStatus.textContent = "Absent";
+                    fieldStatus.classList.add("text-primary");
+                    row.appendChild(fieldStatus);
+
+                    // Append the row to the table body
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+
+        async function displayAttendance(){
+            const queryAttendance = query(collection(db, "ict3_12_1-1-1-2024"));
+            onSnapshot(queryAttendance, (querySnapshot) => {
+                const studentsAttendance = [];
+                querySnapshot.forEach((doc) => {
+                    let statusLabel = "";
+                    const studentTime = moment(doc.data().time.toDate());
+                    const startTime = moment(document.getElementById("start-time").value);
+                    let diffMinutes = studentTime.diff(startTime, 'minutes');
+                    if (Math.abs(diffMinutes) <= 10) {
+                        statusLabel = "Present";
+                    } else {
+                        statusLabel = "Late";
+                    }
+                    studentsAttendance.push({
+                        id: doc.id,
+                        studentId: doc.data().studentId,
+                        time: doc.data().time,
+                        status: statusLabel
+                    });
+                });
+                studentsAttendance.forEach(function (student) {
+                    var fieldTime = document.getElementById("time-" + student.studentId);
+                    fieldTime.textContent = moment(student.time.toDate()).format('MMMM D YYYY, h:mm A'); 
+                    var fieldStatus = document.getElementById("status-" + student.studentId);
+                    fieldStatus.textContent = student.status;
+                    var statusClass = student.status === "Present" ? "text-success" : "text-warning";
+                    fieldStatus.className = '';
+                    fieldStatus.classList.add(statusClass);
+                });                    
+            });
+        }
+
+        async function resetAttendance() {
+            const querySnapshot = await getDocs(collection(db, "ict3_12_1-1-1-2024"));
+            querySnapshot.forEach(async (doc) => {
+                await deleteDoc(doc.ref);
+            });
+            location.reload();
+        }
+
+        async function getStartTime() {
+            const docRef = doc(db, "configs", "time");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                document.getElementById("start-time").value = moment(docSnap.data().startTime.toDate()).format('YYYY-MM-DDTHH:mm');
+            } else {
+                const currentTime = new Date();
+                document.getElementById("start-time").value = moment(currentTime).format('YYYY-MM-DDTHH:mm');
+            }
+        }
+
+        async function updateStartTime() {
+            const docRef = doc(db, "configs", "time");
+            await setDoc(docRef, {
+                startTime: new Date(document.getElementById("start-time").value)
+            }, { merge: true });
+            displayAttendance();
+        }
+
+        function handleResetClick() {
+            if(confirm("Are you sure you want to reset the attendance?")) {
+                resetAttendance();
+            }
+        }
+
+        function exportToCSV() {
+            const table = document.getElementById("students-table-attendance");
+            const csv = Papa.unparse(tableToData(table));
+            downloadCSV(csv);
+        }
+
+        function tableToData(table) {
+            const data = [];
+            const rows = table.querySelectorAll("tr");
+            for (let i = 0; i < rows.length; i++) {
+            const rowData = [];
+            const cols = rows[i].querySelectorAll("td, th");
+            for (let j = 0; j < cols.length; j++) {
+                rowData.push(cols[j].innerText);
+            }
+            data.push(rowData);
+            }
+            return data;
+        }
+
+        function downloadCSV(csv) {
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.setAttribute("href", url);
+            a.setAttribute("download", "ict3_12-1.csv");
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+      
+        getAll();
+        displayAttendance();
+        getStartTime();
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const resetButton = document.getElementById("reset-button");
+            resetButton.addEventListener("click", handleResetClick);
+        });
+        document.addEventListener("DOMContentLoaded", function() {
+            const resetButton = document.getElementById("export-button");
+            resetButton.addEventListener("click", exportToCSV);
+        });
+        document.addEventListener("DOMContentLoaded", function() {
+            const resetButton = document.getElementById("start-time");
+            resetButton.addEventListener("blur", updateStartTime);
+        });
+      
+    </script>
+</body>
+
+</html>
